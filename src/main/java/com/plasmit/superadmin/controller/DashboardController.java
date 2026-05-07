@@ -37,4 +37,12 @@ public class DashboardController {
 
         return ApiResponse.success("Dashboard summary fetched", dashboardService.getSummary());
     }
+
+    @GetMapping("/hospital-count")
+    public ApiResponse<Integer> getHospitalCount() {
+        log.info("Dashboard hospital count API called. userId={}, role={}",
+                TenantContext.getUserId(), TenantContext.getRole());
+
+        return ApiResponse.success("Hospital count fetched", dashboardService.getHospitalCount());
+    }
 }

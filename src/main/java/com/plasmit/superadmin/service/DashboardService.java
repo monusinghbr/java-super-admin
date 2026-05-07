@@ -8,4 +8,6 @@ public interface DashboardService {
     DashboardKpiResponse getKpis();
 
     DashboardSummaryResponse getSummary();
+
+    int getHospitalCount();
 }

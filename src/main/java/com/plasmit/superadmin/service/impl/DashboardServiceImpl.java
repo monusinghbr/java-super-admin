@@ -55,4 +55,12 @@ public class DashboardServiceImpl implements DashboardService {
                 dashboardRepository.findOnboardingQueue()
         );
     }
+
+    @Override
+    public int getHospitalCount() {
+        log.info("Fetching hospital count. userId={}, role={}",
+                TenantContext.getUserId(), TenantContext.getRole());
+
+        return dashboardRepository.countTotalHospitals();
+    }
 }
