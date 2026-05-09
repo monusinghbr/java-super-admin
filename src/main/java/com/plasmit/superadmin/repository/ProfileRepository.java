@@ -108,10 +108,18 @@ public class ProfileRepository {
 
     public List<SessionResponse> findSessions(Long userId) {
         String sql = """
-                SELECT id, device, browser, ip_address, location, last_active_at, is_current
+                SELECT
+                    id,
+                    'Unknown device' AS device,
+                    COALESCE(user_agent, '') AS browser,
+                    ip_address,
+                    NULL AS location,
+                    COALESCE(updated_at, created_at) AS last_active_at,
+                    status = 'ACTIVE' AS is_current
                 FROM user_sessions
                 WHERE user_id = :userId
-                  AND revoked = 0
+                  AND status = 'ACTIVE'
+                  AND revoked_at IS NULL
                 ORDER BY last_active_at DESC
                 """;
 
@@ -130,7 +138,9 @@ public class ProfileRepository {
     public int revokeSession(Long userId, Long sessionId) {
         String sql = """
                 UPDATE user_sessions
-                SET revoked = 1
+                SET status = 'REVOKED',
+                    revoked_at = NOW(),
+                    updated_at = NOW()
                 WHERE id = :sessionId
                   AND user_id = :userId
                 """;
@@ -143,9 +153,12 @@ public class ProfileRepository {
     public int revokeOtherSessions(Long userId) {
         String sql = """
                 UPDATE user_sessions
-                SET revoked = 1
+                SET status = 'REVOKED',
+                    revoked_at = NOW(),
+                    updated_at = NOW()
                 WHERE user_id = :userId
-                  AND is_current = 0
+                  AND status = 'ACTIVE'
+                  AND revoked_at IS NULL
                 """;
 
         return jdbcTemplate.update(sql, new MapSqlParameterSource("userId", userId));

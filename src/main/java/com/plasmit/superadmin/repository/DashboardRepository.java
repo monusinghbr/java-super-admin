@@ -55,10 +55,10 @@ public class DashboardRepository {
         String sql = """
                 SELECT
                     CAST(id AS CHAR) AS id,
-                    action AS title,
-                    COALESCE(message, '') AS message,
-                    COALESCE(target_type, 'AUDIT') AS category,
-                    'LOW' AS severity
+                    event AS title,
+                    COALESCE(detail, '') AS message,
+                    COALESCE(category, target_type, 'AUDIT') AS category,
+                    COALESCE(severity, 'LOW') AS severity
                 FROM audit_logs
                 ORDER BY created_at DESC
                 LIMIT 5
