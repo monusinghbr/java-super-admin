@@ -11,7 +11,6 @@ import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequestMapping("/api/v1/super-admin/dashboard")
-@CrossOrigin("*")
 public class DashboardController {
 
     private static final Logger log = LoggerFactory.getLogger(DashboardController.class);

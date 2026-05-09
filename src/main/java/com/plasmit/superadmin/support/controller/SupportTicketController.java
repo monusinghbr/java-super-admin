@@ -12,7 +12,6 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/api/v1/super-admin/support-tickets")
-@CrossOrigin("*")
 public class SupportTicketController {
 
     private final SupportTicketService service;

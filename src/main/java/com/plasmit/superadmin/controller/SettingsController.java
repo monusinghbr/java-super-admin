@@ -15,7 +15,6 @@ import java.util.Map;
 
 @RestController
 @RequestMapping("/api/v1/super-admin/settings")
-@CrossOrigin("*")
 public class SettingsController {
 
     private static final Logger log = LoggerFactory.getLogger(SettingsController.class);

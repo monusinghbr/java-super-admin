@@ -16,7 +16,6 @@ import java.util.Map;
 
 @RestController
 @RequestMapping("/api/v1/super-admin/hospitals")
-@CrossOrigin("*")
 public class HospitalController {
 
     private static final Logger log = LoggerFactory.getLogger(HospitalController.class);

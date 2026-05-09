@@ -14,7 +14,6 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/api/v1/super-admin/profile")
-@CrossOrigin("*")
 public class ProfileController {
 
     private final ProfileService profileService;

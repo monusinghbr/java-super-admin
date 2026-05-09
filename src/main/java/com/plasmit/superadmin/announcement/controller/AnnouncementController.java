@@ -14,7 +14,6 @@ import java.util.Map;
 
 @RestController
 @RequestMapping("/api/v1/super-admin/announcements")
-@CrossOrigin("*")
 public class AnnouncementController {
 
     private static final Logger log = LoggerFactory.getLogger(AnnouncementController.class);
