@@ -45,8 +45,8 @@ public class DashboardServiceImpl implements DashboardService {
         DashboardSummaryResponse.SecurityPosture securityPosture =
                 new DashboardSummaryResponse.SecurityPosture(
                         dashboardRepository.calculateMfaEnabledPercentage(),
-                        76,
-                        100
+                        dashboardRepository.calculateRbacReviewedPercentage(),
+                        dashboardRepository.calculateAuditRetentionHealthyPercentage()
                 );
 
         return new DashboardSummaryResponse(

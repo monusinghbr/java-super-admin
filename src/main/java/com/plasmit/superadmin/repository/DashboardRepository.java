@@ -31,11 +31,25 @@ public class DashboardRepository {
     }
 
     public int countActiveSubscriptions() {
-        return 0;
+        String sql = """
+                SELECT COUNT(*)
+                FROM hospital_subscriptions
+                WHERE status = 'ACTIVE'
+                  AND is_deleted = 0
+                """;
+        return getCount(sql);
     }
 
     public int countExpiringPlansNext30Days() {
-        return 0;
+        String sql = """
+                SELECT COUNT(*)
+                FROM hospital_subscriptions
+                WHERE status = 'ACTIVE'
+                  AND is_deleted = 0
+                  AND COALESCE(renewal_date, end_date)
+                      BETWEEN CURDATE() AND DATE_ADD(CURDATE(), INTERVAL 30 DAY)
+                """;
+        return getCount(sql);
     }
 
     public int countPlatformUsers() {
@@ -44,11 +58,52 @@ public class DashboardRepository {
     }
 
     public int countFailedPayments() {
-        return 0;
+        String sql = """
+                SELECT COUNT(*)
+                FROM billing_payments
+                WHERE is_deleted = 0
+                  AND UPPER(payment_status) NOT IN ('SUCCESS', 'PAID')
+                """;
+        return getCount(sql);
     }
 
     public int calculateMfaEnabledPercentage() {
-        return 0;
+        String sql = """
+                SELECT COALESCE(ROUND(
+                    100 * SUM(CASE WHEN mfa_enabled = 1 THEN 1 ELSE 0 END) / NULLIF(COUNT(*), 0)
+                ), 0)
+                FROM users
+                WHERE status = 'ACTIVE'
+                  AND is_deleted = 0
+                """;
+        return getNumber(sql);
+    }
+
+    public int calculateRbacReviewedPercentage() {
+        String sql = """
+                SELECT COALESCE(ROUND(
+                    100 * SUM(CASE WHEN permission_count > 0 THEN 1 ELSE 0 END) / NULLIF(COUNT(*), 0)
+                ), 0)
+                FROM (
+                    SELECT r.id, COUNT(rp.permission_id) AS permission_count
+                    FROM roles r
+                    LEFT JOIN role_permissions rp ON rp.role_id = r.id
+                    WHERE r.is_deleted = 0
+                    GROUP BY r.id
+                ) role_summary
+                """;
+        return getNumber(sql);
+    }
+
+    public int calculateAuditRetentionHealthyPercentage() {
+        String sql = """
+                SELECT COALESCE(ROUND(
+                    100 * SUM(CASE WHEN created_at >= DATE_SUB(NOW(), INTERVAL 90 DAY) THEN 1 ELSE 0 END)
+                    / NULLIF(COUNT(*), 0)
+                ), 0)
+                FROM audit_logs
+                """;
+        return getNumber(sql);
     }
 
     public List<DashboardSummaryResponse.CriticalAlert> findCriticalAlerts() {
@@ -78,14 +133,29 @@ public class DashboardRepository {
     public List<DashboardSummaryResponse.OnboardingQueueItem> findOnboardingQueue() {
         String sql = """
                 SELECT
-                    CAST(id AS CHAR) AS hospital_id,
-                    hospital_name,
-                    hospital_code,
-                    status
-                FROM hospitals
-                WHERE is_deleted = 0
-                  AND status IN ('PENDING', 'INACTIVE')
-                ORDER BY created_at DESC
+                    CAST(h.id AS CHAR) AS hospital_id,
+                    h.hospital_name,
+                    h.hospital_code,
+                    CASE
+                        WHEN hs.id IS NULL THEN 'Subscription not assigned'
+                        WHEN hs.plan_id IS NULL THEN 'Subscription assignment'
+                        WHEN hs.payment_status <> 'PAID' THEN 'Payment pending'
+                        WHEN h.status <> 'ACTIVE' THEN 'Activation pending'
+                        ELSE 'Onboarded'
+                    END AS current_step,
+                    COALESCE(h.contact_person, 'Unassigned') AS owner
+                FROM hospitals h
+                LEFT JOIN hospital_subscriptions hs
+                       ON hs.hospital_id = h.id
+                      AND hs.is_deleted = 0
+                WHERE h.is_deleted = 0
+                  AND (
+                      h.status IN ('PENDING', 'INACTIVE')
+                      OR hs.id IS NULL
+                      OR hs.plan_id IS NULL
+                      OR hs.payment_status <> 'PAID'
+                  )
+                ORDER BY h.created_at DESC
                 LIMIT 10
                 """;
 
@@ -94,8 +164,8 @@ public class DashboardRepository {
                         rs.getString("hospital_id"),
                         rs.getString("hospital_name"),
                         rs.getString("hospital_code"),
-                        "Subscription assignment",
-                        "Operations Admin"
+                        rs.getString("current_step"),
+                        rs.getString("owner")
                 )
         );
     }
@@ -103,5 +173,10 @@ public class DashboardRepository {
     private int getCount(String sql) {
         Integer value = jdbcTemplate.queryForObject(sql, new org.springframework.jdbc.core.namedparam.MapSqlParameterSource(), Integer.class);
         return value == null ? 0 : value;
+    }
+
+    private int getNumber(String sql) {
+        Number value = jdbcTemplate.queryForObject(sql, new org.springframework.jdbc.core.namedparam.MapSqlParameterSource(), Number.class);
+        return value == null ? 0 : value.intValue();
     }
 }
