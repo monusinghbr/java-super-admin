@@ -62,6 +62,7 @@ public class ProfileRepository {
         String sql = """
                 UPDATE users
                 SET name = :name,
+                    full_name = :name,
                     email = :email,
                     avatar_url = :avatarUrl,
                     updated_at = NOW()
